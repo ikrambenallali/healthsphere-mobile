@@ -7,6 +7,8 @@ type WorkoutContextType = {
   loading: boolean;
   addWorkout: (workout: Workout) => void;
   removeWorkout: (id: string) => void;
+  error: string | null;
+  reload: () => void;
 };
 
 const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);

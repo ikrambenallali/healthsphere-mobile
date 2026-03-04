@@ -1,11 +1,15 @@
-import { WorkoutProvider } from './src/context/WorkoutContext';
-import AppNavigator from './src/navigation/AppNavigator';
+import RootStackNavigator from './src/navigation/RootStackNavigator';
 import 'react-native-get-random-values';
+import 'react-native-gesture-handler';
+import { NavigationContainer } from '@react-navigation/native';
+import { WorkoutProvider } from './src/context/WorkoutContext';
 
 export default function App() {
   return (
-    <WorkoutProvider>
-      <AppNavigator />
+     <WorkoutProvider>
+      <NavigationContainer>
+        <RootStackNavigator />
+      </NavigationContainer>
     </WorkoutProvider>
   );
 }
