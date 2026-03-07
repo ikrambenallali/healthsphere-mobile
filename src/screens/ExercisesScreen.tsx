@@ -1,3 +1,5 @@
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -11,8 +13,11 @@ import {
 import ExerciseCard from "../components/ExerciseCard";
 import { useExercises } from "../context/ExercisesContext";
 import { Exercise } from "../types/exercise";
+import { RootStackParamList } from "../types/navigation";
 
 export default function ExercisesScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {
     exercises,
     isLoading,
@@ -57,8 +62,9 @@ export default function ExercisesScreen() {
         exercise={item}
         isFavorite={isFavorite}
         onToggleFavorite={() => toggleFavorite(item.id)}
-        // onPress to be implemented later
-        onPress={() => {}}
+        onPress={() =>
+          navigation.navigate("ExerciseDetails", { exerciseId: item.id })
+        }
       />
     );
   };

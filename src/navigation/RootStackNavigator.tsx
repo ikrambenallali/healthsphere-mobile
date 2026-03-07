@@ -1,7 +1,8 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import DrawerNavigator from './DrawerNavigator';
-import AddWorkoutScreen from '../screens/AddWorkoutScreen';
-import WorkoutDetailsScreen from '../screens/WorkoutDetailsScreen';
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import AddWorkoutScreen from "../screens/AddWorkoutScreen";
+import ExerciseDetailsScreen from "../screens/ExerciseDetailsScreen";
+import WorkoutDetailsScreen from "../screens/WorkoutDetailsScreen";
+import DrawerNavigator from "./DrawerNavigator";
 
 const Stack = createNativeStackNavigator();
 
@@ -10,8 +11,8 @@ export default function RootStackNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#FFF8F9' },
-        animation: 'slide_from_right',
+        contentStyle: { backgroundColor: "#FFF8F9" },
+        animation: "slide_from_right",
       }}
     >
       <Stack.Screen name="MainDrawer" component={DrawerNavigator} />
@@ -21,18 +22,18 @@ export default function RootStackNavigator() {
         component={AddWorkoutScreen}
         options={{
           headerShown: true,
-          title: '✨ Nouvelle séance',
-          headerStyle: { backgroundColor: '#FFF0F2' },
-          headerTintColor: '#C04040',
+          title: "✨ Nouvelle séance",
+          headerStyle: { backgroundColor: "#FFF0F2" },
+          headerTintColor: "#C04040",
           headerTitleStyle: {
-            fontFamily: 'Georgia',
-            fontWeight: '700',
+            fontFamily: "Georgia",
+            fontWeight: "700",
             fontSize: 18,
-            color: '#3D2C2C',
+            color: "#3D2C2C",
           },
           headerShadowVisible: false,
           headerBackTitleVisible: false,
-          animation: 'slide_from_bottom',
+          animation: "slide_from_bottom",
         }}
       />
 
@@ -41,17 +42,28 @@ export default function RootStackNavigator() {
         component={WorkoutDetailsScreen}
         options={{
           headerShown: true,
-          title: '💪 Détails',
-          headerStyle: { backgroundColor: '#FFF0F2' },
-          headerTintColor: '#C04040',
+          title: "💪 Détails",
+          headerStyle: { backgroundColor: "#FFF0F2" },
+          headerTintColor: "#C04040",
           headerTitleStyle: {
-            fontFamily: 'Georgia',
-            fontWeight: '700',
+            fontFamily: "Georgia",
+            fontWeight: "700",
             fontSize: 18,
-            color: '#3D2C2C',
+            color: "#3D2C2C",
           },
           headerShadowVisible: false,
           headerBackTitleVisible: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="ExerciseDetails"
+        component={ExerciseDetailsScreen}
+        options={{
+          headerShown: true,
+          title: "Détails de l'exercice",
+          headerBackTitle: "Retour",
+          animation: "fade_from_bottom",
         }}
       />
     </Stack.Navigator>
