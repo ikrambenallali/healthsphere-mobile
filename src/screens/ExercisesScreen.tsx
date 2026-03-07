@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons"; // Added
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useState } from "react";
@@ -8,6 +9,7 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  TouchableOpacity, // Added
   View,
 } from "react-native";
 import ExerciseCard from "../components/ExerciseCard";
@@ -94,6 +96,12 @@ export default function ExercisesScreen() {
         }
         ListEmptyComponent={renderEmptyComponent}
       />
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate("AddExercise")}
+      >
+        <Ionicons name="add" size={30} color="white" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -144,5 +152,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#888",
     marginBottom: 16,
+  },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    backgroundColor: "#007AFF",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
   },
 });

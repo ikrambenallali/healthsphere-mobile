@@ -27,13 +27,31 @@ const mapDifficulty = (
       return undefined;
   }
 };
+// ...
+// Helper pour mapper la difficulté interne vers l'API
+const mapDifficultyToApi = (
+  difficulty?: "easy" | "medium" | "hard",
+): string => {
+  switch (difficulty) {
+    case "easy":
+      return "Beginner";
+    case "medium":
+      return "Intermediate";
+    case "hard":
+      return "Advanced";
+    default:
+      return "Beginner"; // Default to Beginner/Easy if undefined
+  }
+};
+// ...
 
+// ...
 // Fonction pour récupérer tous les exercices
 export const fetchExercises = async (): Promise<Exercise[]> => {
   try {
     const response = await api.get("/exercises");
 
-    // On suppose que la réponse a la forme { success: true, data: [...] }
+    // On suppose que la réponse a la forme { success: true, count: N, data: [...] }
     if (response.data && Array.isArray(response.data.data)) {
       return response.data.data.map((item: any) => ({
         id: item._id, // Mapper _id (MongoDB) vers id
@@ -52,6 +70,7 @@ export const fetchExercises = async (): Promise<Exercise[]> => {
     throw error;
   }
 };
+// ...
 
 // Fonction pour récupérer un exercice par ID
 export const fetchExerciseById = async (
@@ -75,6 +94,73 @@ export const fetchExerciseById = async (
     return null;
   } catch (error) {
     console.error(`Erreur lors de la récupération de l'exercice ${id}:`, error);
+    throw error;
+  }
+};
+
+// ...
+export const createExercise = async (
+  exerciseData: Omit<Exercise, "id">,
+): Promise<Exercise> => {
+  try {
+    const payload = {
+      name: exerciseData.name,
+      description: exerciseData.description,
+      category: exerciseData.category,
+      difficulty: mapDifficultyToApi(exerciseData.difficulty),
+      muscleGroup: exerciseData.muscleGroup,
+      imageUrl: exerciseData.imageUrl,
+      duration: 10, // Default
+    };
+    const response = await api.post("/exercises", payload);
+    // Sometimes backend returns created object directly or inside data
+    const item = response.data.data || response.data;
+    return {
+      id: item._id,
+      name: item.name,
+      description: item.description,
+      category: item.category,
+      difficulty: mapDifficulty(item.difficulty),
+      muscleGroup: item.muscleGroup,
+      imageUrl: item.imageUrl,
+    };
+  } catch (error) {
+    console.error("Error creating exercise:", error);
+    throw error;
+  }
+};
+
+export const updateExercise = async (
+  id: string,
+  exerciseData: Partial<Exercise>,
+): Promise<Exercise> => {
+  try {
+    const payload: any = { ...exerciseData };
+    if (exerciseData.difficulty) {
+      payload.difficulty = mapDifficultyToApi(exerciseData.difficulty);
+    }
+    const response = await api.put(`/exercises/${id}`, payload);
+    const item = response.data.data || response.data;
+    return {
+      id: item._id,
+      name: item.name,
+      description: item.description,
+      category: item.category,
+      difficulty: mapDifficulty(item.difficulty),
+      muscleGroup: item.muscleGroup,
+      imageUrl: item.imageUrl,
+    };
+  } catch (error) {
+    console.error("Error updating exercise:", error);
+    throw error;
+  }
+};
+
+export const deleteExercise = async (id: string): Promise<void> => {
+  try {
+    await api.delete(`/exercises/${id}`);
+  } catch (error) {
+    console.error("Error deleting exercise:", error);
     throw error;
   }
 };

@@ -1,10 +1,11 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import AddExerciseScreen from "../screens/AddExerciseScreen"; // Added
 import AddWorkoutScreen from "../screens/AddWorkoutScreen";
 import ExerciseDetailsScreen from "../screens/ExerciseDetailsScreen";
 import WorkoutDetailsScreen from "../screens/WorkoutDetailsScreen";
 import DrawerNavigator from "./DrawerNavigator";
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator(); // Type inference is usually enough
 
 export default function RootStackNavigator() {
   return (
@@ -64,6 +65,16 @@ export default function RootStackNavigator() {
           title: "Détails de l'exercice",
           headerBackTitle: "Retour",
           animation: "fade_from_bottom",
+        }}
+      />
+
+      <Stack.Screen
+        name="AddExercise"
+        component={AddExerciseScreen}
+        options={{
+          headerShown: true,
+          title: "➕ Nouvel Exercice",
+          presentation: "modal",
         }}
       />
     </Stack.Navigator>

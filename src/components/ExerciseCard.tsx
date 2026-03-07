@@ -22,6 +22,15 @@ const DIFFICULTY_LABELS = {
   hard: "Difficile",
 };
 
+const CATEGORY_LABELS: { [key: string]: string } = {
+  Strength: "Musculation",
+  Cardio: "Cardio",
+  Flexibility: "Yoga/Souplesse",
+  Balance: "Équilibre",
+  HIIT: "HIIT",
+  Other: "Autre",
+};
+
 export default function ExerciseCard({
   exercise,
   isFavorite,
@@ -36,6 +45,8 @@ export default function ExerciseCard({
     ? DIFFICULTY_LABELS[exercise.difficulty]
     : "Inconnu";
 
+  const categoryLabel = CATEGORY_LABELS[exercise.category] || exercise.category;
+
   return (
     <TouchableOpacity
       style={styles.card}
@@ -48,7 +59,7 @@ export default function ExerciseCard({
           <Text style={styles.name} numberOfLines={1}>
             {exercise.name}
           </Text>
-          <Text style={styles.category}>{exercise.category}</Text>
+          <Text style={styles.category}>{categoryLabel}</Text>
         </View>
         <TouchableOpacity
           onPress={onToggleFavorite}

@@ -6,7 +6,11 @@ import React, {
     useEffect,
     useReducer,
 } from "react";
-import { fetchExercises } from "../services/api";
+import {
+    createExercise,
+    deleteExercise,
+    fetchExercises,
+} from "../services/api";
 import { Exercise } from "../types/exercise";
 
 // Types
@@ -25,7 +29,9 @@ type ExercisesAction =
   | { type: "ADD_FAVORITE"; payload: string }
   | { type: "REMOVE_FAVORITE"; payload: string }
   | { type: "SET_LOADING"; payload: boolean }
-  | { type: "SET_ERROR"; payload: string };
+  | { type: "SET_ERROR"; payload: string }
+  | { type: "DELETE_EXERCISE"; payload: string }
+  | { type: "ADD_EXERCISE"; payload: Exercise };
 
 const initialState: ExercisesState = {
   exercises: [],
@@ -61,6 +67,13 @@ const exercisesReducer = (
       return { ...state, isLoading: action.payload, error: null };
     case "SET_ERROR":
       return { ...state, error: action.payload, isLoading: false };
+    case "DELETE_EXERCISE":
+      return {
+        ...state,
+        exercises: state.exercises.filter((e) => e.id !== action.payload),
+      };
+    case "ADD_EXERCISE":
+      return { ...state, exercises: [...state.exercises, action.payload] };
     default:
       return state;
   }
@@ -69,6 +82,8 @@ const exercisesReducer = (
 interface ExercisesContextType extends ExercisesState {
   toggleFavorite: (id: string) => void;
   loadExercises: () => Promise<void>;
+  addExercise: (data: Omit<Exercise, "id">) => Promise<void>;
+  delExercise: (id: string) => Promise<void>;
 }
 
 const ExercisesContext = createContext<ExercisesContextType | undefined>(
@@ -127,13 +142,41 @@ export const ExercisesProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addExercise = async (data: Omit<Exercise, "id">) => {
+    try {
+      const newExercise = await createExercise(data);
+      dispatch({ type: "ADD_EXERCISE", payload: newExercise });
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Erreur lors de la création." });
+      throw error;
+    }
+  };
+
+  const delExercise = async (id: string) => {
+    try {
+      await deleteExercise(id);
+      dispatch({ type: "DELETE_EXERCISE", payload: id });
+    } catch (error) {
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Erreur lors de la suppression.",
+      });
+    }
+  };
+
   const loadExercises = async () => {
     await loadData();
   };
 
   return (
     <ExercisesContext.Provider
-      value={{ ...state, toggleFavorite, loadExercises }}
+      value={{
+        ...state,
+        toggleFavorite,
+        loadExercises,
+        addExercise,
+        delExercise,
+      }}
     >
       {children}
     </ExercisesContext.Provider>

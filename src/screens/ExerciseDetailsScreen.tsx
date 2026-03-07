@@ -1,9 +1,10 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons"; // Added Ionicons
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react"; // Added useLayoutEffect
 import {
     ActivityIndicator,
+    Alert, // Added Alert
     Button,
     Image,
     ScrollView,
@@ -31,7 +32,7 @@ export default function ExerciseDetailsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { exerciseId } = route.params;
 
-  const { exercises, favorites, toggleFavorite } = useExercises();
+  const { exercises, favorites, toggleFavorite, delExercise } = useExercises(); // Added delExercise
 
   // Try to find in context first
   const contextExercise = exercises.find((e) => e.id === exerciseId);
@@ -66,6 +67,38 @@ export default function ExerciseDetailsScreen() {
     }
   };
 
+  const handleDelete = () => {
+    Alert.alert(
+      "Supprimer l'exercice",
+      "Êtes-vous sûr de vouloir supprimer cet exercice ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await delExercise(exerciseId);
+              navigation.goBack();
+            } catch (error) {
+              Alert.alert("Erreur", "Impossible de supprimer l'exercice.");
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={handleDelete} style={{ marginRight: 10 }}>
+          <Ionicons name="trash-outline" size={24} color="#FF3B30" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, exerciseId]);
+
   useEffect(() => {
     if (exercise) {
       navigation.setOptions({
@@ -97,6 +130,15 @@ export default function ExerciseDetailsScreen() {
     hard: "#F44336",
   }[exercise.difficulty || "medium"];
 
+  const CATEGORY_LABELS: { [key: string]: string } = {
+    Strength: "Musculation",
+    Cardio: "Cardio",
+    Flexibility: "Yoga/Souplesse",
+    Balance: "Équilibre",
+    HIIT: "HIIT",
+    Other: "Autre",
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -124,7 +166,9 @@ export default function ExerciseDetailsScreen() {
       <View style={styles.tagsContainer}>
         <View style={styles.tag}>
           <Text style={styles.tagLabel}>Catégorie</Text>
-          <Text style={styles.tagValue}>{exercise.category}</Text>
+          <Text style={styles.tagValue}>
+            {CATEGORY_LABELS[exercise.category] || exercise.category}
+          </Text>
         </View>
         <View style={styles.tag}>
           <Text style={styles.tagLabel}>Difficulté</Text>
