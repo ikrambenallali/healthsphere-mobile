@@ -165,4 +165,49 @@ export const deleteExercise = async (id: string): Promise<void> => {
   }
 };
 
+// Favorites API
+
+export const fetchFavorites = async (): Promise<
+  { id: string; exerciseId: string }[]
+> => {
+  try {
+    const response = await api.get("/favorites");
+    if (response.data && Array.isArray(response.data.data)) {
+      return response.data.data.map((item: any) => ({
+        id: item._id, // Favorite ID
+        exerciseId: item.exerciseId._id || item.exerciseId, // Handle populated or unpopulated
+      }));
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching favorites:", error);
+    return [];
+  }
+};
+
+export const addFavorite = async (
+  exerciseId: string,
+): Promise<{ id: string; exerciseId: string }> => {
+  try {
+    const response = await api.post("/favorites", { exerciseId });
+    const item = response.data.data;
+    return {
+      id: item._id,
+      exerciseId: item.exerciseId,
+    };
+  } catch (error) {
+    console.error("Error adding favorite:", error);
+    throw error;
+  }
+};
+
+export const removeFavorite = async (favoriteId: string): Promise<void> => {
+  try {
+    await api.delete(`/favorites/${favoriteId}`);
+  } catch (error) {
+    console.error("Error removing favorite:", error);
+    throw error;
+  }
+};
+
 export default api;

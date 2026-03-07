@@ -29,12 +29,18 @@ export default function ExercisesScreen() {
     favorites,
   } = useExercises();
   const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<"all" | "favorites">("all"); // Added state
 
   const onRefresh = async () => {
     setRefreshing(true);
     await loadExercises();
     setRefreshing(false);
   };
+
+  const filteredExercises =
+    filter === "all"
+      ? exercises
+      : exercises.filter((ex) => favorites.includes(ex.id));
 
   // Affichage du spinner pendant le chargement initial
   if (isLoading && exercises.length === 0) {
@@ -73,15 +79,48 @@ export default function ExercisesScreen() {
 
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>Aucun exercice trouvé.</Text>
-      <Button title="Actualiser" onPress={loadExercises} />
+      <Text style={styles.emptyText}>
+        {filter === "favorites"
+          ? "Aucun favori pour le moment."
+          : "Aucun exercice trouvé."}
+      </Text>
+      {filter === "all" && (
+        <Button title="Actualiser" onPress={loadExercises} />
+      )}
     </View>
   );
 
   return (
     <View style={styles.container}>
+      {/* Tabs Filter */}
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tab, filter === "all" && styles.activeTab]}
+          onPress={() => setFilter("all")}
+        >
+          <Text
+            style={[styles.tabText, filter === "all" && styles.activeTabText]}
+          >
+            Tous
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, filter === "favorites" && styles.activeTab]}
+          onPress={() => setFilter("favorites")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              filter === "favorites" && styles.activeTabText,
+            ]}
+          >
+            Favoris
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <FlatList
-        data={exercises}
+        data={filteredExercises}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={
@@ -152,6 +191,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#888",
     marginBottom: 16,
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    gap: 15,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 25,
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  activeTab: {
+    backgroundColor: "#007AFF",
+    shadowColor: "#007AFF",
+    shadowOpacity: 0.4,
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#666",
+  },
+  activeTabText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
   fab: {
     position: "absolute",

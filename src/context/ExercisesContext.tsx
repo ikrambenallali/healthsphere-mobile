@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
     createContext,
     ReactNode,
@@ -7,9 +6,12 @@ import React, {
     useReducer,
 } from "react";
 import {
+    addFavorite,
     createExercise,
     deleteExercise,
     fetchExercises,
+    fetchFavorites,
+    removeFavorite,
 } from "../services/api";
 import { Exercise } from "../types/exercise";
 
@@ -17,6 +19,7 @@ import { Exercise } from "../types/exercise";
 interface ExercisesState {
   exercises: Exercise[];
   favorites: string[];
+  favoritesMap: Record<string, string>;
   isLoading: boolean;
   error: string | null;
 }
@@ -24,10 +27,17 @@ interface ExercisesState {
 type ExercisesAction =
   | {
       type: "SET_INITIAL_DATA";
-      payload: { exercises: Exercise[]; favorites: string[] };
+      payload: {
+        exercises: Exercise[];
+        favorites: string[];
+        favoritesMap: Record<string, string>;
+      };
     }
-  | { type: "ADD_FAVORITE"; payload: string }
-  | { type: "REMOVE_FAVORITE"; payload: string }
+  | {
+      type: "ADD_FAVORITE_SUCCESS";
+      payload: { exerciseId: string; favoriteId: string };
+    }
+  | { type: "REMOVE_FAVORITE_SUCCESS"; payload: string }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string }
   | { type: "DELETE_EXERCISE"; payload: string }
@@ -36,11 +46,10 @@ type ExercisesAction =
 const initialState: ExercisesState = {
   exercises: [],
   favorites: [],
+  favoritesMap: {},
   isLoading: true, // Initial state must be loading
   error: null,
 };
-
-const FAVORITES_KEY = "favorites_exercises";
 
 const exercisesReducer = (
   state: ExercisesState,
@@ -52,16 +61,25 @@ const exercisesReducer = (
         ...state,
         exercises: action.payload.exercises,
         favorites: action.payload.favorites,
+        favoritesMap: action.payload.favoritesMap,
         isLoading: false,
         error: null,
       };
-    case "ADD_FAVORITE":
-      if (state.favorites.includes(action.payload)) return state;
-      return { ...state, favorites: [...state.favorites, action.payload] };
-    case "REMOVE_FAVORITE":
+    case "ADD_FAVORITE_SUCCESS":
+      return {
+        ...state,
+        favorites: [...state.favorites, action.payload.exerciseId],
+        favoritesMap: {
+          ...state.favoritesMap,
+          [action.payload.exerciseId]: action.payload.favoriteId,
+        },
+      };
+    case "REMOVE_FAVORITE_SUCCESS":
+      const { [action.payload]: _, ...newMap } = state.favoritesMap;
       return {
         ...state,
         favorites: state.favorites.filter((id) => id !== action.payload),
+        favoritesMap: newMap,
       };
     case "SET_LOADING":
       return { ...state, isLoading: action.payload, error: null };
@@ -80,7 +98,7 @@ const exercisesReducer = (
 };
 
 interface ExercisesContextType extends ExercisesState {
-  toggleFavorite: (id: string) => void;
+  toggleFavorite: (id: string) => Promise<void>;
   loadExercises: () => Promise<void>;
   addExercise: (data: Omit<Exercise, "id">) => Promise<void>;
   delExercise: (id: string) => Promise<void>;
@@ -97,18 +115,24 @@ export const ExercisesProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: "SET_LOADING", payload: true });
     try {
       // Parallel load
-      const [exercises, storedFavorites] = await Promise.all([
+      const [exercises, favoritesData] = await Promise.all([
         fetchExercises(),
-        AsyncStorage.getItem(FAVORITES_KEY),
+        fetchFavorites(),
       ]);
 
-      const favorites: string[] = storedFavorites
-        ? JSON.parse(storedFavorites)
-        : [];
+      const favoritesList = favoritesData.map((f) => f.exerciseId);
+      const favoritesMap = favoritesData.reduce(
+        (acc, curr) => ({ ...acc, [curr.exerciseId]: curr.id }),
+        {},
+      );
 
       dispatch({
         type: "SET_INITIAL_DATA",
-        payload: { exercises, favorites },
+        payload: {
+          exercises,
+          favorites: favoritesList,
+          favoritesMap,
+        },
       });
     } catch (error) {
       console.error("Failed to load exercises data", error);
@@ -124,21 +148,25 @@ export const ExercisesProvider = ({ children }: { children: ReactNode }) => {
     loadData();
   }, []);
 
-  // Save favorites whenever they change, BUT only if not loading
-  useEffect(() => {
-    if (!state.isLoading) {
-      AsyncStorage.setItem(
-        FAVORITES_KEY,
-        JSON.stringify(state.favorites),
-      ).catch((e) => console.error(e));
-    }
-  }, [state.favorites, state.isLoading]);
-
-  const toggleFavorite = (id: string) => {
-    if (state.favorites.includes(id)) {
-      dispatch({ type: "REMOVE_FAVORITE", payload: id });
-    } else {
-      dispatch({ type: "ADD_FAVORITE", payload: id });
+  const toggleFavorite = async (exerciseId: string) => {
+    try {
+      if (state.favorites.includes(exerciseId)) {
+        // Remove
+        const favoriteId = state.favoritesMap[exerciseId];
+        if (favoriteId) {
+          await removeFavorite(favoriteId);
+          dispatch({ type: "REMOVE_FAVORITE_SUCCESS", payload: exerciseId });
+        }
+      } else {
+        // Add
+        const response = await addFavorite(exerciseId);
+        dispatch({
+          type: "ADD_FAVORITE_SUCCESS",
+          payload: { exerciseId, favoriteId: response.id },
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling favorite", error);
     }
   };
 
