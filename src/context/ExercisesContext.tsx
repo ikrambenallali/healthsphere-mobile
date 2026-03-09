@@ -1,20 +1,21 @@
 import React, {
-    createContext,
-    ReactNode,
-    useContext,
-    useEffect,
-    useReducer,
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useReducer,
 } from "react";
 import {
-    addFavorite,
-    createExercise,
-    deleteExercise,
-    fetchExercises,
-    fetchFavorites,
-    removeFavorite,
+  addFavorite,
+  createExercise,
+  deleteExercise,
+  fetchExercises,
+  fetchFavorites,
+  removeFavorite,
 } from "../services/api";
 import { Exercise } from "../types/exercise";
-
+import { loadExercisesCache, saveExercisesCache } from "../storage/exerciseStorage";
+import { isConnected } from "../utils/network";
 // Types
 interface ExercisesState {
   exercises: Exercise[];
@@ -22,26 +23,28 @@ interface ExercisesState {
   favoritesMap: Record<string, string>;
   isLoading: boolean;
   error: string | null;
+  isOffline: boolean;
 }
 
 type ExercisesAction =
   | {
-      type: "SET_INITIAL_DATA";
-      payload: {
-        exercises: Exercise[];
-        favorites: string[];
-        favoritesMap: Record<string, string>;
-      };
-    }
+    type: "SET_INITIAL_DATA";
+    payload: {
+      exercises: Exercise[];
+      favorites: string[];
+      favoritesMap: Record<string, string>;
+    };
+  }
   | {
-      type: "ADD_FAVORITE_SUCCESS";
-      payload: { exerciseId: string; favoriteId: string };
-    }
+    type: "ADD_FAVORITE_SUCCESS";
+    payload: { exerciseId: string; favoriteId: string };
+  }
   | { type: "REMOVE_FAVORITE_SUCCESS"; payload: string }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string }
   | { type: "DELETE_EXERCISE"; payload: string }
-  | { type: "ADD_EXERCISE"; payload: Exercise };
+  | { type: "ADD_EXERCISE"; payload: Exercise }
+  | { type: "SET_OFFLINE"; payload: boolean };
 
 const initialState: ExercisesState = {
   exercises: [],
@@ -49,6 +52,7 @@ const initialState: ExercisesState = {
   favoritesMap: {},
   isLoading: true, // Initial state must be loading
   error: null,
+  isOffline: false,
 };
 
 const exercisesReducer = (
@@ -92,6 +96,11 @@ const exercisesReducer = (
       };
     case "ADD_EXERCISE":
       return { ...state, exercises: [...state.exercises, action.payload] };
+    case "SET_OFFLINE":
+      return {
+        ...state,
+        isOffline: action.payload,
+      };
     default:
       return state;
   }
@@ -112,37 +121,64 @@ export const ExercisesProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(exercisesReducer, initialState);
 
   const loadData = async () => {
-    dispatch({ type: "SET_LOADING", payload: true });
-    try {
-      // Parallel load
-      const [exercises, favoritesData] = await Promise.all([
-        fetchExercises(),
-        fetchFavorites(),
-      ]);
+  dispatch({ type: "SET_LOADING", payload: true });
 
-      const favoritesList = favoritesData.map((f) => f.exerciseId);
-      const favoritesMap = favoritesData.reduce(
-        (acc, curr) => ({ ...acc, [curr.exerciseId]: curr.id }),
-        {},
-      );
+  //  Charger cache
+  const cachedExercises = await loadExercisesCache();
+  if (cachedExercises.length > 0) {
+    dispatch({
+      type: "SET_INITIAL_DATA",
+      payload: {
+        exercises: cachedExercises,
+        favorites: [],       // ou charger les favoris en cache si tu les stockes
+        favoritesMap: {},
+      },
+    });
+  }
 
-      dispatch({
-        type: "SET_INITIAL_DATA",
-        payload: {
-          exercises,
-          favorites: favoritesList,
-          favoritesMap,
-        },
-      });
-    } catch (error) {
-      console.error("Failed to load exercises data", error);
-      dispatch({
-        type: "SET_ERROR",
-        payload:
-          "Impossible de charger les exercices. Vérifiez votre connexion.",
-      });
-    }
-  };
+  //  Vérifier connexion
+  const online = await isConnected();
+
+  if (!online) {
+    // si pas de connexion, on reste avec le cache
+    dispatch({ type: "SET_OFFLINE", payload: true });
+    dispatch({ type: "SET_LOADING", payload: false });
+    return;
+  }
+
+  //  Si online, fetch API
+  try {
+    const [exercises, favoritesData] = await Promise.all([
+      fetchExercises(),
+      fetchFavorites(),
+    ]);
+
+    const favoritesList = favoritesData.map((f) => f.exerciseId);
+    const favoritesMap = favoritesData.reduce(
+      (acc, curr) => ({ ...acc, [curr.exerciseId]: curr.id }),
+      {}
+    );
+
+    //  Sauvegarder cache
+    await saveExercisesCache(exercises);
+
+    dispatch({
+      type: "SET_INITIAL_DATA",
+      payload: {
+        exercises,
+        favorites: favoritesList,
+        favoritesMap,
+      },
+    });
+
+    dispatch({ type: "SET_OFFLINE", payload: false });
+  } catch (error) {
+    dispatch({
+      type: "SET_ERROR",
+      payload: "Impossible de charger les exercices.",
+    });
+  }
+};
 
   useEffect(() => {
     loadData();

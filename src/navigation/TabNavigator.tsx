@@ -1,21 +1,24 @@
+import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View, StyleSheet } from 'react-native';
-import HomeScreen from '../screens/HomeScreen';
+import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ExercisesScreen from '../screens/ExercisesScreen';
 import HistoryScreen from '../screens/HistoryScreen';
+import HomeScreen from '../screens/HomeScreen';
 
 const Tab = createBottomTabNavigator();
 
 type TabIconProps = {
-  emoji: string;
+  iconName: string;
   label: string;
   focused: boolean;
 };
 
-function TabIcon({ emoji, label, focused }: TabIconProps) {
+function TabIcon({ iconName, label, focused }: TabIconProps) {
+  const color = focused ? '#C04040' : '#C4A0A0';
   return (
     <View style={[styles.tabItem, focused && styles.tabItemFocused]}>
-      <Text style={styles.tabEmoji}>{emoji}</Text>
+      <Ionicons name={iconName} size={20} color={color} />
       <Text style={[styles.tabLabel, focused && styles.tabLabelFocused]}>
         {label}
       </Text>
@@ -25,12 +28,21 @@ function TabIcon({ emoji, label, focused }: TabIconProps) {
 }
 
 export default function TabNavigator() {
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 62 + insets.bottom;
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: tabBarHeight,
+            paddingBottom: insets.bottom + 6,
+          },
+        ],
       }}
     >
       <Tab.Screen
@@ -38,7 +50,7 @@ export default function TabNavigator() {
         component={HomeScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🏠" label="Accueil" focused={focused} />
+            <TabIcon iconName={focused ? 'home' : 'home-outline'} label="Accueil" focused={focused} />
           ),
         }}
       />
@@ -47,7 +59,7 @@ export default function TabNavigator() {
         component={ExercisesScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="💪" label="Exercices" focused={focused} />
+            <TabIcon iconName={focused ? 'barbell' : 'barbell-outline'} label="Exercices" focused={focused} />
           ),
         }}
       />
@@ -56,7 +68,7 @@ export default function TabNavigator() {
         component={HistoryScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="📅" label="Historique" focused={focused} />
+            <TabIcon iconName={focused ? 'calendar' : 'calendar-outline'} label="Historique" focused={focused} />
           ),
         }}
       />
@@ -69,8 +81,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#F5E6E8',
-    height: 72,
-    paddingBottom: 8,
     paddingTop: 6,
     shadowColor: '#E8A4A0',
     shadowOffset: { width: 0, height: -4 },
@@ -79,25 +89,26 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   tabItem: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 4,
     borderRadius: 16,
-    gap: 2,
   },
   tabItemFocused: {
-    backgroundColor: '#FDE8EC',
+    // backgroundColor: '#FDE8EC',
   },
   tabEmoji: {
     fontSize: 20,
   },
-  tabLabel: {
-    fontFamily: 'Georgia',
-    fontSize: 10,
-    color: '#C4A0A0',
-    letterSpacing: 0.3,
-  },
+tabLabel: {
+  fontFamily: 'Georgia',
+  fontSize: 10,
+  color: '#C4A0A0',
+  letterSpacing: 0.3,
+  textAlign: 'center',
+  width: '100%',
+},
   tabLabelFocused: {
     color: '#C04040',
     fontWeight: '700',
