@@ -3,20 +3,30 @@ import { Exercise } from "../types/exercise";
 
 const EXERCISES_KEY = "EXERCISES_CACHE";
 
-export const saveExercisesCache = async (data: Exercise[]) => {
+export const saveExercisesCache = async (data: {
+  exercises: any[];
+  favorites: string[];
+  favoritesMap: Record<string, string>;
+}) => {
   try {
-    await AsyncStorage.setItem(EXERCISES_KEY, JSON.stringify(data));
+    await AsyncStorage.setItem(
+      "exercises_cache",
+      JSON.stringify(data)
+    );
   } catch (error) {
-    console.log("Cache save error", error);
+    console.log("Error saving cache", error);
   }
 };
 
-export const loadExercisesCache = async (): Promise<Exercise[]> => {
+export const loadExercisesCache = async () => {
   try {
-    const data = await AsyncStorage.getItem(EXERCISES_KEY);
-    return data ? JSON.parse(data) : [];
+    const data = await AsyncStorage.getItem("exercises_cache");
+
+    if (!data) return null;
+
+    return JSON.parse(data);
   } catch (error) {
-    console.log("Cache load error", error);
-    return [];
+    console.log("Error loading cache", error);
+    return null;
   }
 };

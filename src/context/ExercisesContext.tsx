@@ -121,64 +121,63 @@ export const ExercisesProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(exercisesReducer, initialState);
 
   const loadData = async () => {
-  dispatch({ type: "SET_LOADING", payload: true });
+    dispatch({ type: "SET_LOADING", payload: true });
 
-  //  Charger cache
-  const cachedExercises = await loadExercisesCache();
-  if (cachedExercises.length > 0) {
-    dispatch({
-      type: "SET_INITIAL_DATA",
-      payload: {
-        exercises: cachedExercises,
-        favorites: [],       // ou charger les favoris en cache si tu les stockes
-        favoritesMap: {},
-      },
-    });
-  }
+    //  Charger cache
+    const cachedData = await loadExercisesCache();
+    if (cachedData) {
+      dispatch({
+        type: "SET_INITIAL_DATA",
+        payload: cachedData,
+      });
+    }
 
-  //  Vérifier connexion
-  const online = await isConnected();
+    //  Vérifier connexion
+    const online = await isConnected();
 
-  if (!online) {
-    // si pas de connexion, on reste avec le cache
-    dispatch({ type: "SET_OFFLINE", payload: true });
-    dispatch({ type: "SET_LOADING", payload: false });
-    return;
-  }
+    if (!online) {
+      // si pas de connexion, on reste avec le cache
+      dispatch({ type: "SET_OFFLINE", payload: true });
+      dispatch({ type: "SET_LOADING", payload: false });
+      return;
+    }
 
-  //  Si online, fetch API
-  try {
-    const [exercises, favoritesData] = await Promise.all([
-      fetchExercises(),
-      fetchFavorites(),
-    ]);
+    //  Si online, fetch API
+    try {
+      const [exercises, favoritesData] = await Promise.all([
+        fetchExercises(),
+        fetchFavorites(),
+      ]);
 
-    const favoritesList = favoritesData.map((f) => f.exerciseId);
-    const favoritesMap = favoritesData.reduce(
-      (acc, curr) => ({ ...acc, [curr.exerciseId]: curr.id }),
-      {}
-    );
+      const favoritesList = favoritesData.map((f) => f.exerciseId);
+      const favoritesMap = favoritesData.reduce(
+        (acc, curr) => ({ ...acc, [curr.exerciseId]: curr.id }),
+        {}
+      );
 
-    //  Sauvegarder cache
-    await saveExercisesCache(exercises);
-
-    dispatch({
-      type: "SET_INITIAL_DATA",
-      payload: {
+      //  Sauvegarder cache
+      await saveExercisesCache({
         exercises,
         favorites: favoritesList,
         favoritesMap,
-      },
-    });
+      });
+      dispatch({
+        type: "SET_INITIAL_DATA",
+        payload: {
+          exercises,
+          favorites: favoritesList,
+          favoritesMap,
+        },
+      });
 
-    dispatch({ type: "SET_OFFLINE", payload: false });
-  } catch (error) {
-    dispatch({
-      type: "SET_ERROR",
-      payload: "Impossible de charger les exercices.",
-    });
-  }
-};
+      dispatch({ type: "SET_OFFLINE", payload: false });
+    } catch (error) {
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Impossible de charger les exercices.",
+      });
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -186,26 +185,68 @@ export const ExercisesProvider = ({ children }: { children: ReactNode }) => {
 
   const toggleFavorite = async (exerciseId: string) => {
     try {
+
       if (state.favorites.includes(exerciseId)) {
-        // Remove
+
         const favoriteId = state.favoritesMap[exerciseId];
+
         if (favoriteId) {
           await removeFavorite(favoriteId);
-          dispatch({ type: "REMOVE_FAVORITE_SUCCESS", payload: exerciseId });
+
+          dispatch({
+            type: "REMOVE_FAVORITE_SUCCESS",
+            payload: exerciseId,
+          });
         }
+
       } else {
-        // Add
+
         const response = await addFavorite(exerciseId);
+
         dispatch({
           type: "ADD_FAVORITE_SUCCESS",
-          payload: { exerciseId, favoriteId: response.id },
+          payload: {
+            exerciseId,
+            favoriteId: response.id,
+          },
         });
+
       }
-    } catch (error) {
+
+    } catch (error: any) {
+
+      if (error.response?.status === 409) {
+
+        console.log("Favorite already exists → syncing state");
+
+        // récupérer les favoris depuis l'API
+        const favoritesData = await fetchFavorites();
+
+        const favoritesList = favoritesData.map((f) => f.exerciseId);
+
+        const favoritesMap = favoritesData.reduce(
+          (acc, curr) => ({
+            ...acc,
+            [curr.exerciseId]: curr.id,
+          }),
+          {}
+        );
+
+        dispatch({
+          type: "SET_INITIAL_DATA",
+          payload: {
+            exercises: state.exercises,
+            favorites: favoritesList,
+            favoritesMap,
+          },
+        });
+
+        return;
+      }
+
       console.error("Error toggling favorite", error);
     }
   };
-
   const addExercise = async (data: Omit<Exercise, "id">) => {
     try {
       const newExercise = await createExercise(data);

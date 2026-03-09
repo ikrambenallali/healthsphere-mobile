@@ -172,12 +172,19 @@ export const fetchFavorites = async (): Promise<
 > => {
   try {
     const response = await api.get("/favorites");
+
     if (response.data && Array.isArray(response.data.data)) {
-      return response.data.data.map((item: any) => ({
-        id: item._id, // Favorite ID
-        exerciseId: item.exerciseId._id || item.exerciseId, // Handle populated or unpopulated
-      }));
+      return response.data.data
+        .filter((item: any) => item.exerciseId) // éviter null
+        .map((item: any) => ({
+          id: item._id,
+          exerciseId:
+            typeof item.exerciseId === "object"
+              ? item.exerciseId._id
+              : item.exerciseId,
+        }));
     }
+
     return [];
   } catch (error) {
     console.error("Error fetching favorites:", error);
@@ -189,6 +196,8 @@ export const addFavorite = async (
   exerciseId: string,
 ): Promise<{ id: string; exerciseId: string }> => {
   try {
+    console.log("Adding favorite:", exerciseId);
+
     const response = await api.post("/favorites", { exerciseId });
     const item = response.data.data;
     return {
