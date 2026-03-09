@@ -29,7 +29,7 @@ export default function HistoryScreen() {
         renderItem={({ item }) => (
           <WorkoutCard
             workout={item}
-            onPress={() => {}}
+            onPress={() => { }}
           />
         )}
       />
@@ -41,6 +41,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#FFF8F9',
+
   },
   center: {
     flex: 1,
