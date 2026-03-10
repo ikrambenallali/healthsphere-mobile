@@ -137,7 +137,7 @@ export default function ExercisesScreen() {
       />
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate("AddExercise")}
+        onPress={() => navigation.navigate("AddWorkout")}
       >
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>

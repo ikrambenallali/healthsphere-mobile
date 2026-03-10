@@ -7,9 +7,8 @@ import HistoryScreen from '../screens/HistoryScreen';
 import HomeScreen from '../screens/HomeScreen';
 
 const Tab = createBottomTabNavigator();
-
 type TabIconProps = {
-  iconName: string;
+  iconName: React.ComponentProps<typeof Ionicons>['name'];
   label: string;
   focused: boolean;
 };
