@@ -5,4 +5,5 @@ export type Workout = {
   intensity: 'faible' | 'moyenne' | 'élevée';
   date: string;
   notes?: string;
+ 
 };
