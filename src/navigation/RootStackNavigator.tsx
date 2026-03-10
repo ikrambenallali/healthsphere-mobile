@@ -3,6 +3,8 @@ import AddExerciseScreen from "../screens/AddExerciseScreen"; // Added
 import AddWorkoutScreen from "../screens/AddWorkoutScreen";
 import ExerciseDetailsScreen from "../screens/ExerciseDetailsScreen";
 import WorkoutDetailsScreen from "../screens/WorkoutDetailsScreen";
+import LoginScreen from "../screens/LoginScreen";
+import RegisterScreen from "../screens/RegisterScreen";
 import DrawerNavigator from "./DrawerNavigator";
 
 const Stack = createNativeStackNavigator(); // Type inference is usually enough
@@ -10,12 +12,15 @@ const Stack = createNativeStackNavigator(); // Type inference is usually enough
 export default function RootStackNavigator() {
   return (
     <Stack.Navigator
+      initialRouteName="Login"
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: "#FFF8F9" },
         animation: "slide_from_right",
       }}
     >
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="MainDrawer" component={DrawerNavigator} />
 
       <Stack.Screen
@@ -33,7 +38,6 @@ export default function RootStackNavigator() {
             color: "#3D2C2C",
           },
           headerShadowVisible: false,
-          headerBackTitleVisible: false,
           animation: "slide_from_bottom",
         }}
       />
@@ -53,7 +57,6 @@ export default function RootStackNavigator() {
             color: "#3D2C2C",
           },
           headerShadowVisible: false,
-          headerBackTitleVisible: false,
         }}
       />
 
