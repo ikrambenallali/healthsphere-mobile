@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,8 +10,24 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUser } from '../context/UserContext';
 
 export default function LoginScreen({ navigation }: any) {
+  const { login, isAuthLoading, authError, clearAuthError } = useUser();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async () => {
+    clearAuthError();
+    try {
+      await login({
+        email: email.trim(),
+        password,
+      });
+    } catch {
+      // L'erreur est déjà gérée dans le contexte.
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -36,6 +53,8 @@ export default function LoginScreen({ navigation }: any) {
           <View style={styles.section}>
             <Text style={styles.label}>Adresse e-mail</Text>
             <TextInput
+              value={email}
+              onChangeText={setEmail}
               placeholder="toi@example.com"
               placeholderTextColor="#D4A8A8"
               keyboardType="email-address"
@@ -47,6 +66,8 @@ export default function LoginScreen({ navigation }: any) {
           <View style={styles.section}>
             <Text style={styles.label}>Mot de passe</Text>
             <TextInput
+              value={password}
+              onChangeText={setPassword}
               placeholder="••••••••"
               placeholderTextColor="#D4A8A8"
               secureTextEntry
@@ -54,13 +75,18 @@ export default function LoginScreen({ navigation }: any) {
             />
           </View>
 
+          {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
+
           {/* Main action */}
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={() => {}}
+            onPress={handleLogin}
+            disabled={isAuthLoading}
             activeOpacity={0.85}
           >
-            <Text style={styles.primaryButtonText}>Se connecter</Text>
+            <Text style={styles.primaryButtonText}>
+              {isAuthLoading ? 'Connexion...' : 'Se connecter'}
+            </Text>
           </TouchableOpacity>
 
           {/* Secondary actions */}
@@ -207,6 +233,13 @@ const styles = StyleSheet.create({
     color: '#C04040',
     fontWeight: '700',
     textDecorationLine: 'underline',
+  },
+  errorText: {
+    marginTop: 14,
+    color: '#C04040',
+    fontFamily: 'Georgia',
+    fontSize: 12,
+    textAlign: 'center',
   },
 });
 

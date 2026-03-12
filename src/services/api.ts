@@ -1,6 +1,18 @@
 import axios from "axios";
 import { Exercise } from "../types/exercise";
 
+export type AuthUser = {
+  _id?: string;
+  name?: string;
+  email?: string;
+};
+
+export type AuthResult = {
+  token: string | null;
+  user: AuthUser | null;
+  message?: string;
+};
+
 // URL de base de l'API
 const BASE_URL = "https://healthsphere-api.onrender.com/api";
 
@@ -11,6 +23,71 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+const getPayload = (value: any) => value?.data ?? value;
+
+const extractUser = (value: any): AuthUser | null => {
+  const user =
+    value?.user ??
+    value?.data?.user ??
+    value?.data ??
+    (value?.email || value?.name || value?._id ? value : null);
+
+  if (!user || typeof user !== "object") {
+    return null;
+  }
+
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+  };
+};
+
+const extractAuthResult = (value: any): AuthResult => {
+  const payload = getPayload(value);
+  const token =
+    payload?.data?.jwt ??
+    payload?.data?.token ??
+    null;
+
+  return {
+    token,
+    user: extractUser(payload),
+    message: payload?.message,
+  };
+};
+
+const postToCandidates = async (
+  paths: string[],
+  payload: Record<string, any>,
+): Promise<any> => {
+  let lastError: unknown = null;
+
+  for (const path of paths) {
+    try {
+      return await api.post(path, payload);
+    } catch (error: any) {
+      // Skip obvious "route not found" style errors and try next candidate.
+      const status = error?.response?.status;
+      if (status && ![404, 405].includes(status)) {
+        throw error;
+      }
+      lastError = error;
+    }
+  }
+
+  throw lastError ?? new Error("No authentication endpoint responded.");
+};
+
+export const setAuthToken = (token: string | null) => {
+  if (token) {
+    api.defaults.headers.common.Authorization = `Bearer ${token}`;
+    return;
+  }
+
+  delete api.defaults.headers.common.Authorization;
+};
 
 // Helper pour mapper la difficulté de l'API vers notre type interne
 const mapDifficulty = (
@@ -161,6 +238,39 @@ export const deleteExercise = async (id: string): Promise<void> => {
     await api.delete(`/exercises/${id}`);
   } catch (error) {
     console.error("Error deleting exercise:", error);
+    throw error;
+  }
+};
+
+export const loginUser = async (credentials: {
+  email: string;
+  password: string;
+}): Promise<AuthResult> => {
+  try {
+    const response = await postToCandidates(["/auth/login"], credentials);
+    return extractAuthResult(response.data);
+  } catch (error) {
+    console.error("Error logging in:", error);
+    throw error;
+  }
+};
+
+export const registerUser = async (userData: {
+  name: string;
+  email: string;
+  password: string;
+}): Promise<AuthResult> => {
+  try {
+    const payload = {
+      name: userData.name,
+      email: userData.email,
+      password: userData.password,
+    };
+
+    const response = await postToCandidates(["/auth/register"], payload);
+    return extractAuthResult(response.data);
+  } catch (error) {
+    console.error("Error registering user:", error);
     throw error;
   }
 };

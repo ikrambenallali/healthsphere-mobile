@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -9,8 +10,35 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUser } from '../context/UserContext';
 
 export default function RegisterScreen({ navigation }: any) {
+  const { register, isAuthLoading, authError, clearAuthError } = useUser();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const handleRegister = async () => {
+    clearAuthError();
+    setLocalError(null);
+
+    if (password !== confirmPassword) {
+      setLocalError('Les mots de passe ne correspondent pas.');
+      return;
+    }
+
+    try {
+      await register({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
+    } catch {
+      // L'erreur API est gérée dans le contexte.
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -36,6 +64,8 @@ export default function RegisterScreen({ navigation }: any) {
           <View style={styles.section}>
             <Text style={styles.label}>Nom Complet</Text>
             <TextInput
+              value={name}
+              onChangeText={setName}
               placeholder="Ex : Fouad Lamrini"
               placeholderTextColor="#D4A8A8"
               style={styles.input}
@@ -45,6 +75,8 @@ export default function RegisterScreen({ navigation }: any) {
           <View style={styles.section}>
             <Text style={styles.label}>Adresse e-mail</Text>
             <TextInput
+              value={email}
+              onChangeText={setEmail}
               placeholder="toi@example.com"
               placeholderTextColor="#D4A8A8"
               keyboardType="email-address"
@@ -56,6 +88,8 @@ export default function RegisterScreen({ navigation }: any) {
           <View style={styles.section}>
             <Text style={styles.label}>Mot de passe</Text>
             <TextInput
+              value={password}
+              onChangeText={setPassword}
               placeholder="••••••••"
               placeholderTextColor="#D4A8A8"
               secureTextEntry
@@ -63,14 +97,34 @@ export default function RegisterScreen({ navigation }: any) {
             />
           </View>
 
+          <View style={styles.section}>
+            <Text style={styles.label}>Confirmer le mot de passe</Text>
+            <TextInput
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="••••••••"
+              placeholderTextColor="#D4A8A8"
+              secureTextEntry
+              style={styles.input}
+            />
+          </View>
+
+          {localError ? <Text style={styles.errorText}>{localError}</Text> : null}
+          {!localError && authError ? (
+            <Text style={styles.errorText}>{authError}</Text>
+          ) : null}
+
 
           {/* CTA */}
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={() => {}}
+            onPress={handleRegister}
+            disabled={isAuthLoading}
             activeOpacity={0.85}
           >
-            <Text style={styles.primaryButtonText}>Créer mon compte</Text>
+            <Text style={styles.primaryButtonText}>
+              {isAuthLoading ? 'Inscription...' : 'Créer mon compte'}
+            </Text>
           </TouchableOpacity>
 
           {/* Bottom text */}
